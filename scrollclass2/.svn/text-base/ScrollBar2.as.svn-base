@@ -1,0 +1,338 @@
+﻿package scrollclass
+{
+	/////////////////////////////////////////tweenmax
+	import gs.TweenMax;
+	
+	//import com.scrollclass.ScrollBox;
+	//import com.scrollclass.ScrollBarEvent;
+	
+	//import caurina.transitions.*;
+	
+	
+	import flash.display.*;
+	import flash.events.*;
+	import flash.display.Stage;
+	import flash.display.BlendMode;
+	//point
+	import flash.geom.Point;
+	
+	
+	public class ScrollBar2 extends MovieClip
+	{
+		//private var sbox:ScrollBox;
+		private var _stage:Stage;
+		
+		private var box:MovieClip;
+		//object
+		private var _x_y:String;
+		private var _roll_on:Boolean;
+		private var _speed:Number;
+				
+		private var _offset:Number;
+		private var _min:Number;
+		private var _max:Number;
+		
+		
+		public function ScrollBar2(_st:Stage, _scbox:MovieClip, $params:Object):void
+		{
+			//trace($params)
+			//super(_st, _scbox, $params);
+			
+			//set params
+			_stage = _st;
+			box = _scbox;
+			
+			
+			_x_y = $params._x_y;
+			_roll_on = $params._roll_on;
+			_speed = $params._speed;
+			///////////////////////////////////////////////
+			//sbox = new ScrollBox(box, _x_y_param);
+			
+			
+			
+			//event
+			addEventListener(ScrollBarEvent.VALUE_CHANGED, sbChange);
+			
+			box.sb.thumb.addEventListener(MouseEvent.MOUSE_DOWN, thumbDown);
+			box.sb.track.addEventListener(MouseEvent.MOUSE_DOWN, trackDown);
+			if(_roll_on)
+			{
+			box.addEventListener(MouseEvent.MOUSE_OVER, thumbRoll);
+			box.addEventListener(MouseEvent.MOUSE_OUT, thumbOut);
+			}
+			_stage.addEventListener(MouseEvent.MOUSE_UP, thumbUp);
+			_stage.addEventListener(MouseEvent.MOUSE_WHEEL, mouseWheelHandler);
+			
+			
+			//hide sb
+			if (!$params._sb_visible)
+			{
+				hideInterface();
+			}
+			
+			
+			
+			
+			///////////////////////////////////for nesxt prev////////new
+			_stage.addEventListener(MouseEvent.MOUSE_MOVE, onMouseMOVE, false, 0, true);
+			box.scroll_menu.next_bt.addEventListener(MouseEvent.MOUSE_OVER, menuRoll);
+			box.scroll_menu.next_bt.addEventListener(MouseEvent.MOUSE_OUT, menuOut);
+			box.scroll_menu.next_bt.addEventListener(MouseEvent.MOUSE_DOWN, menuDown);
+			
+			box.scroll_menu.prev_bt.addEventListener(MouseEvent.MOUSE_OVER, menuRoll);
+			box.scroll_menu.prev_bt.addEventListener(MouseEvent.MOUSE_OUT, menuOut);
+			box.scroll_menu.prev_bt.addEventListener(MouseEvent.MOUSE_DOWN, menuDown);
+			box.scroll_menu.prev_bt.buttonMode = true;
+			box.scroll_menu.next_bt.buttonMode = true;
+		}
+		
+		///////////////////////////////////for nesxt prev////////new ///////////menu
+		private function onMouseMOVE(e:MouseEvent):void
+		{
+			var tpoint:Point = localToGlobal(new Point(mouseX,mouseY));
+			
+			if( (box.masker.hitTestPoint(tpoint.x,tpoint.y, false))  )
+			{
+				if(tpoint.x < box.masker.width/2)
+				{
+				if (box.content.x != 0)//for limit
+					{
+					TweenMax.to(box.scroll_menu.prev_bt, 1, {  x:0    });
+					//close
+					TweenMax.to(box.scroll_menu.next_bt, 1, {  x:box.masker.width + 80    } );
+					}
+				}
+				else
+				{
+				var limit:Number = box.content.width - box.masker.width;
+				if(box.content.x != -limit)//for limit
+				TweenMax.to(box.scroll_menu.next_bt, 1, {  x:box.masker.width    });
+				//close
+				TweenMax.to(box.scroll_menu.prev_bt, 1, {  x:-80    });
+				}
+			} 
+			else
+			{
+				//trace("not");
+				TweenMax.to(box.scroll_menu.prev_bt, 1, {  x:-80    });
+				TweenMax.to(box.scroll_menu.next_bt, 1, {  x:box.masker.width+ 80    });
+			}
+		}
+		
+		private function menuRoll(e:MouseEvent):void
+		{
+			//TweenMax.to(e.currentTarget.bt, .5, {  alpha:1, x :8   } );
+			TweenMax.to(e.currentTarget.bt, 1, {glowFilter:{color:0xffffff, alpha:1, blurX:08, blurY:08}, x :8});	
+		}
+		
+		private function menuOut(e:MouseEvent):void
+		{
+			//TweenMax.to(e.currentTarget.bt, .5, {  alpha:.4 , x:14  } );
+			TweenMax.to(e.currentTarget.bt, 1, {glowFilter:{color:0xffffff, alpha:1, blurX:0, blurY:0} , x:14});
+		}
+		
+		private function menuDown(e:MouseEvent):void
+		{
+			if (!TweenMax.isTweening(box.content))
+			{
+				if((e.currentTarget.name == "next_bt") )
+				nextContent();
+				if( (e.currentTarget.name == "prev_bt"))
+				prevContent();
+			}
+		}
+		
+		
+		
+		private function prevContent():void
+		{			
+			if (box.content.x < 0)
+			TweenMax.to(box.content, _speed, {  x:box.content.x + 770   });
+			else
+			TweenMax.to(box.content, _speed, {  x:0   });
+			//box.content.x  = 0;
+		}
+		private function nextContent():void
+		{
+			var limit:Number = (box.content.width - box.masker.width);
+			
+			if (-box.content.x < limit )
+			TweenMax.to(box.content, _speed, {  x:box.content.x - 770   });
+			else
+			TweenMax.to(box.content, _speed, {  x:-limit   });
+			
+		}
+		
+		
+		
+		
+		private function setMin():void
+		{
+			box.content.x = 0;
+		}
+		
+		
+		private function setMax():void
+		{
+			if (box.content.x >= box.content.width + box.masker.width)
+			box.content.x = -box.content.width + box.masker.width;
+			
+		
+		}
+		
+		
+		////////////////////////////////////////////////////////////////////////
+		
+		private function setMinMax():void
+		{
+		//for dinamic thumb size
+			_min = 0;
+			if (_x_y == 'x')
+			_max = box.sb.track.width - box.sb.thumb.width;
+			else if (_x_y == 'y')
+			_max = box.sb.track.height - box.sb.thumb.height;
+			
+			if (_x_y == 'x')
+			{
+				if(box.sb.thumb.x <= _min)
+				box.sb.thumb.x = _min;
+				if(box.sb.thumb.x >= _max)
+				box.sb.thumb.x = _max;
+				dispatchEvent(new ScrollBarEvent(box.sb.thumb.x/_max));
+			}
+			else if (_x_y == 'y')
+				{
+					if(box.sb.thumb.y <= _min)
+					box.sb.thumb.y = _min;
+					if(box.sb.thumb.y >= _max)
+					box.sb.thumb.y = _max;
+					dispatchEvent(new ScrollBarEvent(box.sb.thumb.y/_max));
+				}
+		}
+		
+		
+		
+		
+		//set via params
+		private function thumbOut(e:MouseEvent):void
+		{
+			_stage.removeEventListener(MouseEvent.MOUSE_MOVE, thumbMoveRoll);
+		}
+		
+		
+		private function thumbRoll(e:MouseEvent):void
+		{
+			
+			_stage.addEventListener(MouseEvent.MOUSE_MOVE, thumbMoveRoll);
+			if (_x_y == 'x')
+			_offset = mouseX - box.sb.thumb.x;
+			else if (_x_y == 'y')
+			_offset = mouseY - box.sb.thumb.y;
+		}
+			
+		private function thumbDown(e:MouseEvent):void
+		{
+			_stage.removeEventListener(MouseEvent.MOUSE_MOVE, thumbMoveRoll);
+			
+			_stage.addEventListener(MouseEvent.MOUSE_MOVE, thumbMove);
+			if (_x_y == 'x')
+			_offset = mouseX - box.sb.thumb.x;
+			else if (_x_y == 'y')
+			_offset = mouseY - box.sb.thumb.y;
+		}
+		private function trackDown(e:MouseEvent):void
+		{
+			if (_x_y == 'x')
+			{
+				box.sb.thumb.x = mouseX - _offset;
+				setMinMax();
+			}
+			else if (_x_y == 'y')
+				{
+					box.sb.thumb.y = mouseY - _offset;
+					setMinMax();
+				}
+		}
+		
+		
+		private function thumbUp(e:MouseEvent):void
+		{
+			_stage.removeEventListener(MouseEvent.MOUSE_MOVE, thumbMove);
+		}
+		
+		
+		private function thumbMoveRoll(e:MouseEvent):void
+		{
+			box.sb.thumb.x = mouseX - box.sb.thumb.width/2;
+			setMinMax();
+		}
+		private function thumbMove(e:MouseEvent):void
+		{
+
+			if (_x_y == 'x')
+			{
+				box.sb.thumb.x = mouseX - _offset;
+				setMinMax();
+			}
+			else if (_x_y == 'y')
+				{
+					box.sb.thumb.y = mouseY - _offset;
+					setMinMax();
+				}
+				
+			e.updateAfterEvent();
+		}
+		
+		public function mouseWheelHandler(e:MouseEvent):void 
+		{
+			if (_x_y == 'x')
+			{
+			box.sb.thumb.x-=(e.delta*2);
+			setMinMax();
+			dispatchEvent(new ScrollBarEvent(box.sb.thumb.x/_max));
+			}
+			if (_x_y == 'y')
+			{
+			box.sb.thumb.y-=(e.delta*2);
+			setMinMax();
+			dispatchEvent(new ScrollBarEvent(box.sb.thumb.y/_max));
+			}
+			e.updateAfterEvent();
+		}
+		
+		private function hideInterface():void
+		{
+			/*if(!_verbose)
+			video_container.holder_mc.blendMode = BlendMode.ERASE;*/
+			
+			box.sb.blendMode = BlendMode.ERASE;
+		}
+		
+		
+		
+		
+		
+		
+		
+		
+		/////////////////
+		private function sbChange(e:ScrollBarEvent):void
+		{
+			if (_x_y == 'x')
+				{
+				TweenMax.to(box.content, _speed, {  x:(-e.scrollPercent*(box.content.width - box.masker.width))    });
+				
+				/*Tweener.addTween(box.content, {x:(-e.scrollPercent*(box.content.width - box.masker.width)),
+								time:1 } );*/
+				}
+				else if (_x_y == 'y')
+					{
+					TweenMax.to(box.content, _speed, {  y:(-e.scrollPercent*(box.content.height - box.masker.height))    });
+					/*Tweener.addTween(box.content, {y:(-e.scrollPercent*(box.content.height - box.masker.height)),
+								time:1 } );*/
+					}
+		}
+	///////////
+	}
+}
