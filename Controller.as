@@ -1,7 +1,6 @@
 ﻿package 
 {
 	//Flash
-	import com.facebook.data.events.EventCategoriesValues;
 	import flash.display.MovieClip;
 	import flash.display.Sprite;
 	import flash.display.Stage;
@@ -9,12 +8,10 @@
 	import flash.display.StageAlign;
 	import flash.events.Event;
 	import flash.events.MouseEvent;
-	import flash.filters.DropShadowFilter;
 	import flash.system.fscommand;
     import flash.net.*;
 	import flash.text.TextField;
 	import flash.ui.Mouse;
-	import flash.display.BlendMode;
 	import flash.display.*;
 	import flash.net.URLLoader;
     import flash.net.URLLoaderDataFormat;

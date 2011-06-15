@@ -5,33 +5,32 @@
  * UPDATES AND DOCS AT: http://www.greensock.com/loadermax/
  **/
 package com.greensock.loading {
-	import com.greensock.loading.core.LoaderItem;
-	
 	import flash.events.Event;
-	import flash.events.ProgressEvent;
-	import flash.net.URLLoader;
-	
-	/** Dispatched when the loader's <code>httpStatus</code> value changes. **/
-	[Event(name="httpStatus", 		type="com.greensock.events.LoaderEvent")]
-	/** Dispatched when the loader experiences a SECURITY_ERROR while loading or auditing its size. **/
-	[Event(name="securityError", 	type="com.greensock.events.LoaderEvent")]
+
 /**
- * Loads generic data which can be text (the default), binary data, or URL-encoded variables. <br /><br />
+ * Loads generic binary data - identical to using a DataLoader with its "<code>format</code>" 
+ * special property set to <code>"binary"</code>. The reason for having a <code>BinaryDataLoader</code>
+ * class is to allow certain file extensions (like ".zip") to be associated with it so that the 
+ * <code>LoaderMax.parse()</code> method can accurately parse URLs with those file extensions. If you do 
+ * not plan on using the <code>LoaderMax.parse()</code> method, however, you could save a small amount 
+ * of kb by simply using DataLoaders with their format set to "binary" instead of using BinaryDataLoaders.<br /><br />
  * 
- * If the <code>format</code> vars property is "text", the <code>content</code> will be a String containing the text of the loaded file.<br /><br />
- * If the <code>format</code> vars property is "binary", the <code>content</code> will be a <code>ByteArray</code> object containing the raw binary data. (See also: BinaryDataLoader)<br /><br />
- * If the <code>format</code> vars property is "variables", the <code>content</code> will be a <code>URLVariables</code> object containing the URL-encoded variables<br /><br />
+ * The following are essentially the same:<br /><code>
+ * new DataLoader("file.zip", {format:"binary"}); <br />
+ * new BinaryDataLoader("file.zip"); </code><br /><br />
+ * 
+ * If you'd like to associate additional file extensions with BinaryDataLoader, you may use the
+ * <code>LoaderMax.registerFileType()</code> method.<br /><br />
  * 
  * <strong>OPTIONAL VARS PROPERTIES</strong><br />
- * The following special properties can be passed into the DataLoader constructor via its <code>vars</code> 
+ * The following special properties can be passed into the BinaryDataLoader constructor via its <code>vars</code> 
  * parameter which can be either a generic object or a <code><a href="data/DataLoaderVars.html">DataLoaderVars</a></code> object:<br />
  * <ul>
  * 		<li><strong> name : String</strong> - A name that is used to identify the loader instance. This name can be fed to the <code>LoaderMax.getLoader()</code> or <code>LoaderMax.getContent()</code> methods or traced at any time. Each loader's name should be unique. If you don't define one, a unique name will be created automatically, like "loader21".</li>
- * 		<li><strong> format : String</strong> - Controls whether the downloaded data is received as text (<code>"text"</code>), raw binary data (<code>"binary"</code>), or URL-encoded variables (<code>"variables"</code>). </li>
  * 		<li><strong> alternateURL : String</strong> - If you define an <code>alternateURL</code>, the loader will initially try to load from its original <code>url</code> and if it fails, it will automatically (and permanently) change the loader's <code>url</code> to the <code>alternateURL</code> and try again. Think of it as a fallback or backup <code>url</code>. It is perfectly acceptable to use the same <code>alternateURL</code> for multiple loaders (maybe a default image for various ImageLoaders for example).</li>
  * 		<li><strong> noCache : Boolean</strong> - If <code>true</code>, a "gsCacheBusterID" parameter will be appended to the url with a random set of numbers to prevent caching (don't worry, this info is ignored when you <code>LoaderMax.getLoader()</code> or <code>LoaderMax.getContent()</code> by <code>url</code> or when you're running locally)</li>
  * 		<li><strong> estimatedBytes : uint</strong> - Initially, the loader's <code>bytesTotal</code> is set to the <code>estimatedBytes</code> value (or <code>LoaderMax.defaultEstimatedBytes</code> if one isn't defined). Then, when the loader begins loading and it can accurately determine the bytesTotal, it will do so. Setting <code>estimatedBytes</code> is optional, but the more accurate the value, the more accurate your loaders' overall progress will be initially. If the loader is inserted into a LoaderMax instance (for queue management), its <code>auditSize</code> feature can attempt to automatically determine the <code>bytesTotal</code> at runtime (there is a slight performance penalty for this, however - see LoaderMax's documentation for details).</li>
- * 		<li><strong> requireWithRoot : DisplayObject</strong> - LoaderMax supports <i>subloading</i>, where an object can be factored into a parent's loading progress. If you want LoaderMax to require this DataLoader as part of its parent SWFLoader's progress, you must set the <code>requireWithRoot</code> property to your swf's <code>root</code>. For example, <code>var loader:DataLoader = new DataLoader("text.txt", {name:"myText", requireWithRoot:this.root});</code></li>
+ * 		<li><strong> requireWithRoot : DisplayObject</strong> - LoaderMax supports <i>subloading</i>, where an object can be factored into a parent's loading progress. If you want LoaderMax to require this BinaryDataLoader as part of its parent SWFLoader's progress, you must set the <code>requireWithRoot</code> property to your swf's <code>root</code>. For example, <code>var loader:BinaryDataLoader = new BinaryDataLoader("file.zip", {name:"zipFile", requireWithRoot:this.root});</code></li>
  * 		<li><strong> allowMalformedURL : Boolean</strong> - Normally, the URL will be parsed and any variables in the query string (like "?name=test&state=il&gender=m") will be placed into a URLVariables object which is added to the URLRequest. This avoids a few bugs in Flash, but if you need to keep the entire URL intact (no parsing into URLVariables), set <code>allowMalformedURL:true</code>. For example, if your URL has duplicate variables in the query string like <code>http://www.greensock.com/?c=S&c=SE&c=SW</code>, it is technically considered a malformed URL and a URLVariables object can't properly contain all the duplicates, so in this case you'd want to set <code>allowMalformedURL</code> to <code>true</code>.</li>
  * 		<li><strong> autoDispose : Boolean</strong> - When <code>autoDispose</code> is <code>true</code>, the loader will be disposed immediately after it completes (it calls the <code>dispose()</code> method internally after dispatching its <code>COMPLETE</code> event). This will remove any listeners that were defined in the vars object (like onComplete, onProgress, onError, onInit). Once a loader is disposed, it can no longer be found with <code>LoaderMax.getLoader()</code> or <code>LoaderMax.getContent()</code> - it is essentially destroyed but its content is not unloaded (you must call <code>unload()</code> or <code>dispose(true)</code> to unload its content). The default <code>autoDispose</code> value is <code>false</code>.
  * 		
@@ -53,40 +52,38 @@ package com.greensock.loading {
  * @example Example AS3 code:<listing version="3.0">
  import com.greensock.loading.~~;
  import com.greensock.events.LoaderEvent;
- import flash.utils.ByteArray;
- import flash.net.URLVariables;
  
-//create a DataLoader for loading text (the default format)
-var loader:DataLoader = new DataLoader("assets/data.txt", {name:"myText", requireWithRoot:this.root, estimatedBytes:900});
-
-//start loading
-loader.load();
-
-//Or you could put the DataLoader into a LoaderMax. Create one first...
-var queue:LoaderMax = new LoaderMax({name:"mainQueue", onProgress:progressHandler, onComplete:completeHandler, onError:errorHandler});
-
-//append the DataLoader and several other loaders
-queue.append( loader );
-queue.append( new DataLoader("assets/variables.txt", {name:"myVariables", format:"variables"}) );
-queue.append( new DataLoader("assets/image1.png", {name:"myBinary", format:"binary", estimatedBytes:3500}) );
-
-//start loading the LoaderMax queue
-queue.load();
-
-function progressHandler(event:LoaderEvent):void {
-	trace("progress: " + event.target.progress);
-}
-
-function completeHandler(event:LoaderEvent):void {
-	var text:String = LoaderMax.getContent("myText");
-	var variables:URLVariables = LoaderMax.getContent("myVariables");
-	var binary:ByteArray = LoaderMax.getContent("myBinary");
-	trace("complete. myText: " + text + ", myVariables.var1: " + variables.var1 + ", myBinary.length: " + binary.length);
-}
-
-function errorHandler(event:LoaderEvent):void {
-	trace("error occured with " + event.target + ": " + event.text);
-}
+ //create a BinaryDataLoader
+ var loader:BinaryDataLoader = new BinaryDataLoader("file.zip", {name:"myZipFile", requireWithRoot:this.root, estimatedBytes:6800});
+ 
+ //begin loading
+ loader.load();
+ 
+ //or we could parse() and array of files, creating a LoaderMax queue with loaders for each file. To do that, we'll first create the array:
+ var files:Array = ["files/archive.zip","images/1.jpg","files/report.pdf","swfs/child.swf"];
+ 
+ //since we want the parse() method to recognize the .pdf file as a BinaryDataLoader, we should registerFileType() first because pdf isn't one of the extensions recognized by default.
+ LoaderMax.registerFileType("pdf", BinaryDataLoader);
+  
+ //before we parse() the array, we need to activate() the loader types that LoaderMax should recognize (we only need to do this once)
+ LoaderMax.activate([BinaryDataLoader, ImageLoader, SWFLoader]);
+ 
+ //now parse the files and create a LoaderMax queue
+ var queue:LoaderMax = LoaderMax.parse(files, {onProgress:progressHandler, onComplete:completeHandler, onChildFail:childFailHandler});
+ queue.load();
+ 
+ function progressHandler(event:LoaderEvent):void {
+ 	trace("progress: " + event.target.progress);
+ }
+ 
+ function completeHandler(event:LoaderEvent):void {
+ 	trace("completed " + event.target);
+ }
+ 
+ function childFailHandler(event:LoaderEvent):void {
+ 	trace(event.target + " failed.");
+ }
+ 
  </listing>
  * 
  * <b>Copyright 2011, GreenSock. All rights reserved.</b> This work is subject to the terms in <a href="http://www.greensock.com/terms_of_use.html">http://www.greensock.com/terms_of_use.html</a> or for corporate Club GreenSock members, the software agreement that was issued with the corporate membership.
@@ -95,27 +92,24 @@ function errorHandler(event:LoaderEvent):void {
  * 
  * @author Jack Doyle, jack@greensock.com
  */	
-	public class DataLoader extends LoaderItem {
+	public class BinaryDataLoader extends DataLoader {
 		/** @private **/
-		private static var _classActivated:Boolean = _activateClass("DataLoader", DataLoader, "txt,js");
-		/** @private **/
-		protected var _loader:URLLoader;
+		private static var _classActivated:Boolean = _activateClass("BinaryDataLoader", BinaryDataLoader, "zip");
 		
 		/**
 		 * Constructor
 		 * 
 		 * @param urlOrRequest The url (<code>String</code>) or <code>URLRequest</code> from which the loader should get its content.
-		 * @param vars An object containing optional configuration details. For example: <code>new DataLoader("text/data.txt", {name:"data", onComplete:completeHandler, onProgress:progressHandler})</code>.<br /><br />
+		 * @param vars An object containing optional configuration details. For example: <code>new BinaryDataLoader("file.zip", {name:"myZipFile", onComplete:completeHandler, onProgress:progressHandler})</code>.<br /><br />
 		 * 
-		 * The following special properties can be passed into the constructor via the <code>vars</code> parameter
+		 * The following special properties can be passed into the constructor via the <code>vars</code> parameter 
 		 * which can be either a generic object or a <code><a href="data/DataLoaderVars.html">DataLoaderVars</a></code> object:<br />
 		 * <ul>
 		 * 		<li><strong> name : String</strong> - A name that is used to identify the loader instance. This name can be fed to the <code>LoaderMax.getLoader()</code> or <code>LoaderMax.getContent()</code> methods or traced at any time. Each loader's name should be unique. If you don't define one, a unique name will be created automatically, like "loader21".</li>
-		 * 		<li><strong> format : String</strong> - Controls whether the downloaded data is received as text (<code>"text"</code>), raw binary data (<code>"binary"</code>), or URL-encoded variables (<code>"variables"</code>). </li>
 		 * 		<li><strong> alternateURL : String</strong> - If you define an <code>alternateURL</code>, the loader will initially try to load from its original <code>url</code> and if it fails, it will automatically (and permanently) change the loader's <code>url</code> to the <code>alternateURL</code> and try again. Think of it as a fallback or backup <code>url</code>. It is perfectly acceptable to use the same <code>alternateURL</code> for multiple loaders (maybe a default image for various ImageLoaders for example).</li>
 		 * 		<li><strong> noCache : Boolean</strong> - If <code>true</code>, a "gsCacheBusterID" parameter will be appended to the url with a random set of numbers to prevent caching (don't worry, this info is ignored when you <code>LoaderMax.getLoader()</code> or <code>LoaderMax.getContent()</code> by <code>url</code> or when you're running locally)</li>
 		 * 		<li><strong> estimatedBytes : uint</strong> - Initially, the loader's <code>bytesTotal</code> is set to the <code>estimatedBytes</code> value (or <code>LoaderMax.defaultEstimatedBytes</code> if one isn't defined). Then, when the loader begins loading and it can accurately determine the bytesTotal, it will do so. Setting <code>estimatedBytes</code> is optional, but the more accurate the value, the more accurate your loaders' overall progress will be initially. If the loader is inserted into a LoaderMax instance (for queue management), its <code>auditSize</code> feature can attempt to automatically determine the <code>bytesTotal</code> at runtime (there is a slight performance penalty for this, however - see LoaderMax's documentation for details).</li>
-		 * 		<li><strong> requireWithRoot : DisplayObject</strong> - LoaderMax supports <i>subloading</i>, where an object can be factored into a parent's loading progress. If you want LoaderMax to require this DataLoader as part of its parent SWFLoader's progress, you must set the <code>requireWithRoot</code> property to your swf's <code>root</code>. For example, <code>var loader:DataLoader = new DataLoader("text.txt", {name:"myText", requireWithRoot:this.root});</code></li>
+		 * 		<li><strong> requireWithRoot : DisplayObject</strong> - LoaderMax supports <i>subloading</i>, where an object can be factored into a parent's loading progress. If you want LoaderMax to require this BinaryDataLoader as part of its parent SWFLoader's progress, you must set the <code>requireWithRoot</code> property to your swf's <code>root</code>. For example, <code>var loader:BinaryDataLoader = new BinaryDataLoader("file.zip", {name:"myZipFile", requireWithRoot:this.root});</code></li>
 		 * 		<li><strong> allowMalformedURL : Boolean</strong> - Normally, the URL will be parsed and any variables in the query string (like "?name=test&state=il&gender=m") will be placed into a URLVariables object which is added to the URLRequest. This avoids a few bugs in Flash, but if you need to keep the entire URL intact (no parsing into URLVariables), set <code>allowMalformedURL:true</code>. For example, if your URL has duplicate variables in the query string like <code>http://www.greensock.com/?c=S&c=SE&c=SW</code>, it is technically considered a malformed URL and a URLVariables object can't properly contain all the duplicates, so in this case you'd want to set <code>allowMalformedURL</code> to <code>true</code>.</li>
 		 * 		<li><strong> autoDispose : Boolean</strong> - When <code>autoDispose</code> is <code>true</code>, the loader will be disposed immediately after it completes (it calls the <code>dispose()</code> method internally after dispatching its <code>COMPLETE</code> event). This will remove any listeners that were defined in the vars object (like onComplete, onProgress, onError, onInit). Once a loader is disposed, it can no longer be found with <code>LoaderMax.getLoader()</code> or <code>LoaderMax.getContent()</code> - it is essentially destroyed but its content is not unloaded (you must call <code>unload()</code> or <code>dispose(true)</code> to unload its content). The default <code>autoDispose</code> value is <code>false</code>.
 		 * 		
@@ -131,50 +125,11 @@ function errorHandler(event:LoaderEvent):void {
 		 * </ul>
 		 * @see com.greensock.loading.data.DataLoaderVars
 		 */
-		public function DataLoader(urlOrRequest:*, vars:Object=null) {
+		public function BinaryDataLoader(urlOrRequest:*, vars:Object=null) {
 			super(urlOrRequest, vars);
-			_type = "DataLoader";
-			_loader = new URLLoader(null);
-			if ("format" in this.vars) {
-				_loader.dataFormat = String(this.vars.format);
-			}
-			_loader.addEventListener(ProgressEvent.PROGRESS, _progressHandler, false, 0, true);
-			_loader.addEventListener(Event.COMPLETE, _receiveDataHandler, false, 0, true);
-			_loader.addEventListener("ioError", _failHandler, false, 0, true);
-			_loader.addEventListener("securityError", _failHandler, false, 0, true);
-			_loader.addEventListener("httpStatus", _httpStatusHandler, false, 0, true);
+			_loader.dataFormat = "binary"; //just to make sure it wasn't overridden if the "format" special vars property was passed into in DataLoader's constructor.
+			_type = "BinaryDataLoader";
 		}
-		
-		/** @private **/
-		override protected function _load():void {
-			_prepRequest();
-			_loader.load(_request);
-		}
-		
-		/** @private scrubLevel: 0 = cancel, 1 = unload, 2 = dispose, 3 = flush **/
-		override protected function _dump(scrubLevel:int=0, newStatus:int=0, suppressEvents:Boolean=false):void {
-			if (_status == LoaderStatus.LOADING) {
-				try {
-					_loader.close();
-				} catch (error:Error) {
-					
-				}
-			}
-			super._dump(scrubLevel, newStatus, suppressEvents);
-		}
-		
-		
-//---- EVENT HANDLERS ------------------------------------------------------------------------------------
-		
-		/** @private Don't use _completeHandler so that subclasses can set _content differently and still call super._completeHandler() (otherwise setting _content in the _completeHandler would always override the _content previously set in sublcasses). **/
-		protected function _receiveDataHandler(event:Event):void {
-			_content = _loader.data;
-			super._completeHandler(event);
-		}
-		
-//---- GETTERS / SETTERS -------------------------------------------------------------------------
-		
-		
 		
 	}
 }

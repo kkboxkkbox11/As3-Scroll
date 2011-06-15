@@ -7,20 +7,15 @@ package com.greensock.easing {
 			if (t==0) return b;  if ((t/=d)==1) return b+c;  if (!p) p=d*.3;
 			if (!a || (c > 0 && a < c) || (c < 0 && a < -c)) { a=c; s = p/4; }
 			else s = p/_2PI * Math.asin (c/a);
-			return -(a*Math.pow(2,15*(t-=1)) * Math.sin( (t*d-s)*_2PI/p )) + b;
+			return -(a*Math.pow(2,10*(t-=1)) * Math.sin( (t*d-s)*_2PI/p )) + b;
 		}
-		
 		public static function easeOut (t:Number, b:Number, c:Number, d:Number, a:Number = 0, p:Number = 0):Number {
-			
-			//trace ('elastico')
-			
 			var s:Number;
 			if (t==0) return b;  if ((t/=d)==1) return b+c;  if (!p) p=d*.3;
 			if (!a || (c > 0 && a < c) || (c < 0 && a < -c)) { a=c; s = p/4; }
 			else s = p/_2PI * Math.asin (c/a);
-			return (a*Math.pow(2,-20*t) * Math.sin( (t*d-s)*_2PI/p ) + c + b);
+			return (a*Math.pow(2,-10*t) * Math.sin( (t*d-s)*_2PI/p ) + c + b);
 		}
-		
 		public static function easeInOut (t:Number, b:Number, c:Number, d:Number, a:Number = 0, p:Number = 0):Number {
 			var s:Number;
 			if (t==0) return b;  if ((t/=d*0.5)==2) return b+c;  if (!p) p=d*(.3*1.5);
